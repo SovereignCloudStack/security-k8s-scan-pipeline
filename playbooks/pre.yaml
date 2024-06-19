@@ -1,3 +1,4 @@
+---
 - name: Install pipeline pre-requisites
   hosts: all
   roles:
