@@ -1,0 +1,52 @@
+- name: Install pipeline pre-requisites
+  hosts: all
+  roles:
+    - role: ensure-pip
+    - role: ensure-docker
+        
+  tasks:
+    - name: Install docker python library
+      ansible.builtin.pip:
+        name:
+        - "docker"
+        state: present
+
+    #Install kubectl
+    - name: add Kubernetes apt-key
+      ansible.builtin.get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+        mode: '0644'
+        force: true
+      become: true
+
+    - name: add Kubernetes APT repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+        state: present
+        update_cache: yes
+      become: true
+
+    - name: install kubectl
+      ansible.builtin.apt:
+        name: kubectl
+        state: present
+        force: yes
+      become: true        
+
+    - name: Copy Files on the node
+      ansible.builtin.copy:
+        src: "../files/"
+        dest: "~/"
+        mode: 0500
+      no_log: false
+    - name: Check if scans output directory exists
+      ansible.builtin.file:
+        path: "~/scan_results"
+        state: directory
+        mode: '0755'
+    - name: Check if Trivy directory exists
+      ansible.builtin.file:
+        path: "~/trivy"
+        state: directory
+        mode: '0755'
