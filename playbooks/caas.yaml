@@ -1,0 +1,67 @@
+---
+- name: Run CaaS pentesting tools
+  hosts: all
+  tasks:
+    - name: Download trivy DB
+      community.docker.docker_container:
+        name: trivy_db
+        image: "aquasec/trivy"
+        command: "image --download-db-only"
+        volumes:
+          - "~/trivy:/root/.cache/trivy:rw"
+        state: started
+        detach: true
+        auto_remove: true
+      register: trivy_result
+
+    - name: Wait for trivy container to complete feeds update
+      community.docker.docker_container_info:
+        name: trivy_db
+      register: trivy_db_info
+      until: trivy_db_info.container.State.Running == false and trivy_db_info.container.State.ExitCode == 0
+      retries: 120
+      delay: 1
+      ignore_errors: true
+      
+    - name: Run trivy scan
+      community.docker.docker_container:
+        name: trivy_scan
+        image: "aquasec/trivy"
+        command: "k8s --scanners vuln,secret --skip-db-update --report summary --kubeconfig /tmp/kubeconfig --format json -o /tmp/scan_results/trivy_results.json"
+        volumes:
+          - "~/:/tmp"
+          - "~/trivy:/root/.cache/trivy:rw"
+        state: started
+        detach: false
+        auto_remove: true
+      register: trivy_result
+
+    - name: Wait for trivy container to complete scan
+      community.docker.docker_container_info:
+        name: trivy_scan
+      register: trivy_scan_info
+      until: trivy_scan_info.container.State.Running == false and trivy_scan_info.container.State.ExitCode == 0
+      retries: 120
+      delay: 1
+      ignore_errors: true
+
+    - name: Display trivy results
+      command: cat ~/scan_results/trivy_results.json
+      register: trivy_results
+      
+    - name: Show trivy results
+      debug:
+        msg: "{{ trivy_results.stdout }}"
+    
+    - name: Run trivy scan compliance
+      community.docker.docker_container:
+        name: trivy_scan_compliance
+        image: "aquasec/trivy"
+        command: "k8s --compliance=k8s-cis --skip-db-update --report all --kubeconfig /tmp/kubeconfig --format json -o /tmp/scan_results/trivy_results_compliance.json pods"
+        volumes:
+          - "~/:/tmp"
+          - "~/trivy:/root/.cache/trivy:rw"
+        state: started
+        detach: true
+        auto_remove: true
+      register: trivy_result_compliance
