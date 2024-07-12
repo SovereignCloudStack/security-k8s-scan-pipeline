@@ -1,0 +1,23 @@
+defectDojoApiCredentials:
+  apiKey: "xxxxxxxxx"
+  url: "http://xxxxxxxx"
+operator:
+  ports:
+    - name: metrics
+      port: 80
+      protocol: TCP
+      targetPort: metrics
+  trivyDojoReportOperator:
+    env:
+      defectDojoAutoCreateContext: "true"
+      defectDojoCloseOldFindings: "true"
+      defectDojoCloseOldFindingsProductScope: "false"
+      defectDojoDeduplicationOnEngagement: "true"
+      defectDojoDoNotReactivate: "true"
+      defectDojoEngagementName: Trivy Operator
+      defectDojoEnvName: Development
+      defectDojoMinimumSeverity: Info
+      defectDojoProductName: Test MineryReport
+      defectDojoProductTypeName: SCS
+      defectDojoVerified: "true"
+      reports: vulnerabilityreports,rbacassessmentreports,infraassessmentreports,configauditreports,exposedsecretreports
