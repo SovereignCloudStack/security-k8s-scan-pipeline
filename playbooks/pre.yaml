@@ -33,7 +33,14 @@
         name: kubectl
         state: present
         force: yes
-      become: true        
+      become: true
+
+    - name: install helm
+      ansible.builtin.apt:
+        name: helm
+        state: present
+        force: yes
+      become: true          
 
     - name: Copy Files on the node
       ansible.builtin.copy:

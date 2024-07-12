@@ -22,12 +22,12 @@
       retries: 120
       delay: 1
       ignore_errors: true
-      
+# Run trivy scan to find misconfiguration vulnerabilities   
     - name: Run trivy scan
       community.docker.docker_container:
         name: trivy_scan
         image: "aquasec/trivy"
-        command: "k8s --scanners vuln,secret --skip-db-update --report summary --kubeconfig /tmp/kubeconfig --format json -o /tmp/scan_results/trivy_results.json"
+        command: "k8s --scanners misconfig --skip-db-update --report summary --kubeconfig /tmp/kubeconfig --format json -A -o /tmp/scan_results/trivy_results.json all"
         volumes:
           - "~/:/tmp"
           - "~/trivy:/root/.cache/trivy:rw"
@@ -45,6 +45,15 @@
       delay: 1
       ignore_errors: true
 
+    - name: Save misconfig scan results as Zuul artifact
+      zuul_return:
+        data:
+          zuul_artifacts:
+            - name: "Trivy Misconfig Scan Results"
+              url: "~/scan_results/trivy_results.json"
+              metadata:
+                type: "application/json"
+
     - name: Display trivy results
       command: cat ~/scan_results/trivy_results.json
       register: trivy_results
@@ -52,7 +61,7 @@
     - name: Show trivy results
       debug:
         msg: "{{ trivy_results.stdout }}"
-    
+# Run trivy scan to find compliance misconfiguration
     - name: Run trivy scan compliance
       community.docker.docker_container:
         name: trivy_scan_compliance
@@ -65,3 +74,12 @@
         detach: true
         auto_remove: true
       register: trivy_result_compliance
+
+    - name: Save compliance scan results as Zuul artifact
+      zuul_return:
+        data:
+          zuul_artifacts:
+            - name: "Trivy Compliance Scan Results"
+              url: "~/scan_results/trivy_results_compliance.json"
+              metadata:
+                type: "application/json"
