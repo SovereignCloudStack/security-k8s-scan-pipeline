@@ -1,6 +1,11 @@
 ---
 - name: Run CaaS pentesting tools
   hosts: all
+  vars:
+    s3_bucket_name: "you-bucket-s3"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+    openstack_project_name: "your-project-name"
+    openstack_region_name: "your-region-name"
   tasks:
     - name: Download trivy DB
       community.docker.docker_container:
@@ -27,7 +32,7 @@
       community.docker.docker_container:
         name: trivy_scan
         image: "aquasec/trivy"
-        command: "k8s --scanners misconfig --skip-db-update --report summary --kubeconfig /tmp/kubeconfig --format json -A -o /tmp/scan_results/trivy_results.json all"
+        command: "k8s --scanners misconfig --skip-db-update --report summary --kubeconfig /tmp/kubeconfig --format json -A -o /tmp/scan_results/trivy_container_results_{{ timestamp }}.json all"
         volumes:
           - "~/:/tmp"
           - "~/trivy:/root/.cache/trivy:rw"
@@ -45,28 +50,20 @@
       delay: 1
       ignore_errors: true
 
-    - name: Save misconfig scan results as Zuul artifact
-      zuul_return:
-        data:
-          zuul_artifacts:
-            - name: "Trivy Misconfig Scan Results"
-              url: "~/scan_results/trivy_results.json"
-              metadata:
-                type: "application/json"
+    - name: Upload misconfig scan results to S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/trivy_container_results_{{ timestamp }}.json"
+        src: "~/scan_results/trivy_container_results_{{ timestamp }}.json"
+        mode: put
+      register: s3_upload_result
 
-    - name: Display trivy results
-      command: cat ~/scan_results/trivy_results.json
-      register: trivy_results
-      
-    - name: Show trivy results
-      debug:
-        msg: "{{ trivy_results.stdout }}"
 # Run trivy scan to find compliance misconfiguration
     - name: Run trivy scan compliance
       community.docker.docker_container:
         name: trivy_scan_compliance
         image: "aquasec/trivy"
-        command: "k8s --compliance=k8s-cis --skip-db-update --report all --kubeconfig /tmp/kubeconfig --format json -o /tmp/scan_results/trivy_results_compliance.json pods"
+        command: "k8s --compliance=k8s-cis --skip-db-update --report all --kubeconfig /tmp/kubeconfig --format json -o /tmp/scan_results/trivy_container_results_compliance_{{ timestamp }}.json pods"
         volumes:
           - "~/:/tmp"
           - "~/trivy:/root/.cache/trivy:rw"
@@ -74,12 +71,150 @@
         detach: true
         auto_remove: true
       register: trivy_result_compliance
+    
+    - name: Upload compliance scan results to S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/trivy_container_results_compliance_{{ timestamp }}.json"
+        filename: "~/scan_results/trivy_container_results_compliance_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_result_compliance
 
-    - name: Save compliance scan results as Zuul artifact
-      zuul_return:
-        data:
-          zuul_artifacts:
-            - name: "Trivy Compliance Scan Results"
-              url: "~/scan_results/trivy_results_compliance.json"
-              metadata:
-                type: "application/json"
+# Extract Trivy Operator VulnerabilityReports reports
+    - name: Get Trivy VulnerabilityReports
+      command: kubectl get vulnerabilityreports -o json > /tmp/scan_results/vulnerability_reports_{{ timestamp }}.json
+      register: vulnerability_reports
+
+    - name: Upload VulnerabilityReports to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/vulnerability_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/vulnerability_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_vulnerability_reports
+
+# Extract Trivy Operator ConfigAuditReport reports
+    - name: Get Trivy ConfigAuditReport
+      command: kubectl get configauditreport -o json > /tmp/scan_results/config_audit_reports_{{ timestamp }}.json
+      register: config_audit_reports
+
+    - name: Upload ConfigAuditReport to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/config_audit_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/config_audit_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_config_audit_reports
+
+# Extract Trivy Operator ExposedSecretReport reports
+    - name: Get Trivy ExposedSecretReport
+      command: kubectl get exposedsecretreport -o json > /tmp/scan_results/exposed_secret_reports_{{ timestamp }}.json
+      register: exposed_secret_reports
+
+    - name: Upload ExposedSecretReport to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/exposed_secret_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/exposed_secret_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_exposed_secret_reports
+
+# Extract Trivy Operator RbacAssessmentReport reports
+    - name: Get Trivy RbacAssessmentReport
+      command: kubectl get rbacassessmentreport -o json > /tmp/scan_results/rbac_assessment_reports_{{ timestamp }}.json
+      register: rbac_assessment_reports
+
+    - name: Upload RbacAssessmentReport to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/rbac_assessment_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/rbac_assessment_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_rbac_assessment_reports
+
+# Extract Trivy Operator InfraAssessmentReport reports
+    - name: Get Trivy InfraAssessmentReport
+      command: kubectl get infraassessmentreport -o json > /tmp/scan_results/infra_assessment_reports_{{ timestamp }}.json
+      register: infra_assessment_reports
+
+    - name: Upload InfraAssessmentReport to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/infra_assessment_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/infra_assessment_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_infra_assessment_reports
+
+# Extract Trivy Operator ClusterComplianceReport reports
+    - name: Get Trivy ClusterComplianceReport
+      command: kubectl get clustercompliancereport -o json > /tmp/scan_results/cluster_compliance_reports_{{ timestamp }}.json
+      register: cluster_compliance_reports
+
+    - name: Upload ClusterComplianceReport to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/cluster_compliance_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/cluster_compliance_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_cluster_compliance_reports
+
+# Extract Trivy Operator ClusterVulnerabilityReport reports
+    - name: Get Trivy ClusterVulnerabilityReport
+      command: kubectl get clustervulnerabilityreport -o json > /tmp/scan_results/cluster_vulnerability_reports_{{ timestamp }}.json
+      register: cluster_vulnerability_reports
+
+    - name: Upload ClusterVulnerabilityReport to OpenStack S3
+      os_object:
+        container: "{{ s3_bucket_name }}"
+        object: "scan_results/cluster_vulnerability_reports_{{ timestamp }}.json"
+        filename: "/tmp/scan_results/cluster_vulnerability_reports_{{ timestamp }}.json"
+        state: present
+        auth:
+          auth_url: "{{ pipeline_conf.openstack_auth_url }}"
+          username: "{{ pipeline_conf.openstack_username }}"
+          password: "{{ pipeline_conf.openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
+          region_name: "{{ openstack_region_name }}"
+      register: s3_upload_cluster_vulnerability_reports
