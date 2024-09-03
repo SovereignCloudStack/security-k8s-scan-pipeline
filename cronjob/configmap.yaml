@@ -37,7 +37,7 @@ data:
   upload.sh: |
     #!/bin/sh
 
-    # Cargar credenciales desde el archivo
+    # Load credentials from the OpenStack credentials file
     vault_path="/etc/openstack/credentials"
     if [ -f "$vault_path" ]; then
         while IFS='=' read -r key value; do
@@ -48,17 +48,17 @@ data:
         exit 1
     fi
 
-    # Configurar variables de entorno
+    # Config environment variables
     export OS_PROJECT_NAME="your-bucket-s3"
     export OS_AUTH_URL="https://api.wavestack.de:5000"
     export OS_PROJECT_NAME="project_name"
     export OS_AUTH_TYPE="v3applicationcredential"
 
-    # Directorio de reportes y nombre del contenedor en OpenStack
+    # Report directory and OpenStack container name
     report_directory="/tmp/reports"
     container_name="object_storage_container_name"
 
-    # Procesar y subir archivos JSON al contenedor de OpenStack
+    # Proccess and upload JSON files to OpenStack container
     for file_path in "$report_directory"/*.json; do
         if [ -f "$file_path" ]; then
             object_name="scan_results/$(basename "$file_path")"
