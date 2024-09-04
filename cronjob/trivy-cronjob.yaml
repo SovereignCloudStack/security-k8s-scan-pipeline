@@ -1,0 +1,106 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trivy-reports-cronjob
+spec:
+  schedule: "0 23 * * *" # Every day at 23:00
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: "trivy-operator"
+          restartPolicy: OnFailure
+          initContainers:
+            - name: "vault-agent-init"
+              args:
+                - touch /home/vault/.vault-token && vault agent -config=/vault/configs/changeme.hcl -exit-after-auth=true #Hcl file must be created before in Vault
+              command:
+                - "/bin/sh"
+                - "-ec"
+              env:
+                - name: "VAULT_ADDR"
+                  value: "https://vault.infra.sovereignit.cloud:8200"
+                - name: "VAULT_LOG_LEVEL"
+                  value: "debug"
+                - name: "VAULT_LOG_FORMAT"
+                  value: "standard"
+              image: "hashicorp/vault"
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+                runAsGroup: 10001
+                runAsNonRoot: true
+                runAsUser: 10001
+              resources:
+                limits:
+                  memory: "256Mi"
+                requests:
+                  cpu: "5m"
+                  memory: "32Mi"
+              volumeMounts:
+                - mountPath: "/home/vault"
+                  name: "home-init"
+                - mountPath: "/vault/secrets"
+                  name: "cron-config"
+          containers:
+          - name: trivy-reports-getter
+            image: bitnami/kubectl
+            command: ["/bin/sh", "-c", "cp /scripts/getter.sh /tmp/getter.sh && chmod +x /tmp/getter.sh && /tmp/getter.sh"]
+            volumeMounts:
+            - name: scripts
+              mountPath: "/scripts"
+            - mountPath: "/etc/openstack"
+              name: "cron-config"
+              subPath: "openstack"
+            - mountPath: "/tmp/reports"
+              name: "reports"
+          - name: trivy-reports-uploader
+            image: openstacktools/openstack-client
+            command: ["/bin/sh", "-c", "timeout=60; while [ ! -f /tmp/reports/report_done ] && [ $timeout -gt 0 ]; do sleep 1; timeout=$((timeout - 1)); done; [ ! -f /tmp/reports/report_done ] && { echo 'Error: report_done file not found after waiting.'; exit 1; }; cp /scripts/upload.sh /tmp/upload.sh && chmod +x /tmp/upload.sh && /tmp/upload.sh"]
+            volumeMounts:
+            - name: scripts
+              mountPath: "/scripts"
+            - mountPath: "/etc/openstack"
+              name: "cron-config"
+              subPath: "openstack"
+            - mountPath: "/tmp/reports"
+              name: "reports"
+
+          
+          volumes:
+          - name: "scripts"
+            configMap:
+              name: trivy-reports-scripts-configmap
+          - name: "cron-config"
+            emptyDir:
+              medium: "Memory"
+          - name: "reports"
+            emptyDir:
+              medium: "Memory"
+          - name: "kube-api-access"
+            projected:
+              defaultMode: 420
+              sources:
+                - serviceAccountToken:
+                    expirationSeconds: 7200
+                    path: "token"
+                - configMap:
+                    items:
+                      - key: "ca.crt"
+                        path: "ca.crt"
+                    name: "kube-root-ca.crt"
+                - downwardAPI:
+                    items:
+                      - fieldRef:
+                          apiVersion: "v1"
+                          fieldPath: "metadata.namespace"
+                        path: "namespace"
+          - name: "home-init"
+            emptyDir:
+              medium: "Memory"
+          - name: "home-sidecar"
+            emptyDir:
+              medium: "Memory"

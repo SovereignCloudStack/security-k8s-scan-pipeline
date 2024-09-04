@@ -1,0 +1,7 @@
+---
+- name: Run deployment of cronjob for reporting
+  hosts: all
+  tasks:
+    - name: Deploy
+      command: kubectl apply -f ./cronjob
+      register: cronjob_deploy
