@@ -1,0 +1,4 @@
+operatorConfig:
+  concurrentScanJobsLimit: 15
+  scanJobRetryAfter: 1m
+  scanJobTimeout: 10m

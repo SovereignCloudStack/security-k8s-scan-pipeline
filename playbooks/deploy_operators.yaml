@@ -1,0 +1,34 @@
+---
+- name: Run Operators
+  hosts: all
+  tasks:
+    - name: Add Aqua Security Helm repository
+      community.kubernetes.helm_repository:
+        name: aqua
+        repo_url: https://aquasecurity.github.io/helm-charts/
+
+    - name: Add Trivy reporter Helm repository
+      community.kubernetes.helm_repository:
+        name: trivy-dojo-report-operator
+        repo_url: https://telekom-mms.github.io/trivy-dojo-report-operator/
+
+    - name: Install or upgrade Trivy Operator
+      community.kubernetes.helm:
+        name: trivy-operator
+        chart_ref: aqua/trivy-operator
+        release_namespace: trivy-system
+        create_namespace: true
+        values_file: /trivy-ooperator/values.yaml
+        state: present
+      environment:
+        KUBECONFIG: "~/.kube/config"
+
+    - name: Install or upgrade Trivy Reporter
+      community.kubernetes.helm:
+        name: trivy-reporter
+        chart_ref: trivy-dojo-report-operator/trivy-dojo-report-operator
+        release_namespace: trivy-system
+        values_file: /trivy-reporter/values.yaml
+        state: present
+      environment:
+        KUBECONFIG: "~/.kube/config"
