@@ -10,41 +10,6 @@ spec:
         spec:
           serviceAccountName: "trivy-operator"
           restartPolicy: OnFailure
-          initContainers:
-            - name: "vault-agent-init"
-              args:
-                - touch /home/vault/.vault-token && vault agent -config=/vault/configs/changeme.hcl -exit-after-auth=true #Hcl file must be created before in Vault
-              command:
-                - "/bin/sh"
-                - "-ec"
-              env:
-                - name: "VAULT_ADDR"
-                  value: "https://vault.infra.sovereignit.cloud:8200"
-                - name: "VAULT_LOG_LEVEL"
-                  value: "debug"
-                - name: "VAULT_LOG_FORMAT"
-                  value: "standard"
-              image: "hashicorp/vault"
-              securityContext:
-                allowPrivilegeEscalation: false
-                capabilities:
-                  drop:
-                    - ALL
-                readOnlyRootFilesystem: true
-                runAsGroup: 10001
-                runAsNonRoot: true
-                runAsUser: 10001
-              resources:
-                limits:
-                  memory: "256Mi"
-                requests:
-                  cpu: "5m"
-                  memory: "32Mi"
-              volumeMounts:
-                - mountPath: "/home/vault"
-                  name: "home-init"
-                - mountPath: "/vault/secrets"
-                  name: "cron-config"
           containers:
           - name: trivy-reports-getter
             image: bitnami/kubectl
@@ -60,6 +25,9 @@ spec:
           - name: trivy-reports-uploader
             image: openstacktools/openstack-client
             command: ["/bin/sh", "-c", "timeout=60; while [ ! -f /tmp/reports/report_done ] && [ $timeout -gt 0 ]; do sleep 1; timeout=$((timeout - 1)); done; [ ! -f /tmp/reports/report_done ] && { echo 'Error: report_done file not found after waiting.'; exit 1; }; cp /scripts/upload.sh /tmp/upload.sh && chmod +x /tmp/upload.sh && /tmp/upload.sh"]
+            envFrom:
+            - secretRef:
+                name: openstack-credentials
             volumeMounts:
             - name: scripts
               mountPath: "/scripts"
