@@ -22,20 +22,35 @@ spec:
               subPath: "openstack"
             - mountPath: "/tmp/reports"
               name: "reports"
-          - name: trivy-reports-uploader
-            image: openstacktools/openstack-client
-            command: ["/bin/sh", "-c", "timeout=60; while [ ! -f /tmp/reports/report_done ] && [ $timeout -gt 0 ]; do sleep 1; timeout=$((timeout - 1)); done; [ ! -f /tmp/reports/report_done ] && { echo 'Error: report_done file not found after waiting.'; exit 1; }; cp /scripts/upload.sh /tmp/upload.sh && chmod +x /tmp/upload.sh && /tmp/upload.sh"]
+          - name: "trivy-reports-uploader"
+            image: "ghcr.io/gtema/openstack"
+            command:
+              - "/bin/sh"
+              - "-c"
+            args:
+              - |
+                timeout=60; \
+                while [ ! -f /tmp/reports/report_done ] && [ $timeout -gt 0 ]; do \
+                  sleep 1; \
+                  timeout=$((timeout - 1)); \
+                done; \
+                if [ ! -f /tmp/reports/report_done ]; then \
+                  echo "Error: report_done file not found after waiting."; \
+                  exit 1; \
+                fi; \
+                cd /tmp/reports && \
+                for file in *.json; do \
+                  osc --os-cloud backup object-store object upload backup scan_results/${file} -vv; \
+                done
             envFrom:
-            - secretRef:
-                name: openstack-credentials
+              - secretRef:
+                  name: openstack-credentials
             volumeMounts:
-            - name: scripts
-              mountPath: "/scripts"
-            - mountPath: "/etc/openstack"
-              name: "cron-config"
-              subPath: "openstack"
-            - mountPath: "/tmp/reports"
-              name: "reports"
+              - mountPath: "/tmp/reports"
+                name: "reports"
+              - mountPath: "/etc/openstack"
+                name: "cron-config"
+                subPath: "openstack"
 
           
           volumes:

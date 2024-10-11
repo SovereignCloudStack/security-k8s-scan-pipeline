@@ -34,42 +34,42 @@ data:
     touch /tmp/reports/report_done
     ls /tmp/reports
 
-  upload.sh: |
-    #!/bin/sh
+#   upload.sh: |
+#     #!/bin/sh
 
-    # Load credentials from the OpenStack credentials file
-    vault_path="/etc/openstack/credentials"
-    if [ -f "$vault_path" ]; then
-        while IFS='=' read -r key value; do
-            export "$key"="$value"
-        done < "$vault_path"
-    else
-        echo "Error: Vault credentials file not found at $vault_path"
-        exit 1
-    fi
+#     # Load credentials from the OpenStack credentials file
+#     vault_path="/etc/openstack/credentials"
+#     if [ -f "$vault_path" ]; then
+#         while IFS='=' read -r key value; do
+#             export "$key"="$value"
+#         done < "$vault_path"
+#     else
+#         echo "Error: Vault credentials file not found at $vault_path"
+#         exit 1
+#     fi
 
-    # Config environment variables
-    export OS_PROJECT_NAME="your-bucket-s3"
-    export OS_AUTH_URL="https://api.wavestack.de:5000"
-    export OS_PROJECT_NAME="project_name"
-    export OS_AUTH_TYPE="v3applicationcredential"
+#     # Config environment variables
+#     export OS_PROJECT_NAME="your-bucket-s3"
+#     export OS_AUTH_URL="https://api.wavestack.de:5000"
+#     export OS_PROJECT_NAME="project_name"
+#     export OS_AUTH_TYPE="v3applicationcredential"
 
-    # Report directory and OpenStack container name
-    report_directory="/tmp/reports"
-    container_name="object_storage_container_name"
+#     # Report directory and OpenStack container name
+#     report_directory="/tmp/reports"
+#     container_name="object_storage_container_name"
 
-    # Proccess and upload JSON files to OpenStack container
-    for file_path in "$report_directory"/*.json; do
-        if [ -f "$file_path" ]; then
-            object_name="scan_results/$(basename "$file_path")"
-            openstack object create "$container_name" "$file_path" --name "$object_name"
-            if [ $? -ne 0 ]; then
-                echo "Error: Failed to upload $file_path to $container_name/$object_name"
-                exit 1
-            else
-                echo "Uploaded $file_path to $container_name/$object_name successfully."
-            fi
-        else
-            echo "No JSON files found in $report_directory."
-        fi
-    done
+#     # Proccess and upload JSON files to OpenStack container
+#     for file_path in "$report_directory"/*.json; do
+#         if [ -f "$file_path" ]; then
+#             object_name="scan_results/$(basename "$file_path")"
+#             openstack object create "$container_name" "$file_path" --name "$object_name"
+#             if [ $? -ne 0 ]; then
+#                 echo "Error: Failed to upload $file_path to $container_name/$object_name"
+#                 exit 1
+#             else
+#                 echo "Uploaded $file_path to $container_name/$object_name successfully."
+#             fi
+#         else
+#             echo "No JSON files found in $report_directory."
+#         fi
+#     done
