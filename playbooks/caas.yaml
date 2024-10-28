@@ -24,7 +24,7 @@
         name: trivy_db
       register: trivy_db_info
       until: trivy_db_info.container.State.Running == false and trivy_db_info.container.State.ExitCode == 0
-      retries: 120
+      retries: 50
       delay: 1
       ignore_errors: true
 # Run trivy scan to find misconfiguration vulnerabilities   
@@ -37,7 +37,7 @@
           - "~/:/tmp"
           - "~/trivy:/root/.cache/trivy:rw"
         state: started
-        detach: false
+        detach: true
         auto_remove: true
       register: trivy_result
 
@@ -46,7 +46,7 @@
         name: trivy_scan
       register: trivy_scan_info
       until: trivy_scan_info.container.State.Running == false and trivy_scan_info.container.State.ExitCode == 0
-      retries: 120
+      retries: 50
       delay: 1
       ignore_errors: true
 
@@ -71,7 +71,6 @@
         detach: true
         auto_remove: true
       register: trivy_result_compliance
-    
     - name: Upload compliance scan results to S3
       os_object:
         container: "{{ s3_bucket_name }}"

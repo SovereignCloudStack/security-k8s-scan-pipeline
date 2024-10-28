@@ -58,6 +58,10 @@ See [the quickstart page](./quickstart.md).
 
 See [the tools page](./tools.md).
 
+## Reports
+
+See [the reports page](./reports.md).
+
 ## Source
 
 [github.com/SovereignCloudStack/security-k8s-scan-pipeline](https://github.com/SovereignCloudStack/security-k8s-scan-pipeline).

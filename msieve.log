@@ -1,0 +1,53 @@
+Thu Oct 10 02:16:19 2024  
+Thu Oct 10 02:16:19 2024  
+Thu Oct 10 02:16:19 2024  Msieve v. 1.53 (SVN unknown)
+Thu Oct 10 02:16:19 2024  random seeds: ee949ed8 e6ab89c2
+Thu Oct 10 02:16:19 2024  factoring 12661188789833907268319215286632422807169877631350751022930382763266439986990873490306086507 (92 digits)
+Thu Oct 10 02:16:19 2024  no P-1/P+1/ECM available, skipping
+Thu Oct 10 02:16:19 2024  commencing quadratic sieve (90-digit input)
+Thu Oct 10 02:16:19 2024  using multiplier of 1
+Thu Oct 10 02:16:19 2024  using generic 32kb sieve core
+Thu Oct 10 02:16:19 2024  sieve interval: 36 blocks of size 32768
+Thu Oct 10 02:16:19 2024  processing polynomials in batches of 6
+Thu Oct 10 02:16:19 2024  using a sieve bound of 1613981 (61176 primes)
+Thu Oct 10 02:16:19 2024  using large prime bound of 135574404 (27 bits)
+Thu Oct 10 02:16:19 2024  using double large prime bound of 434430010647864 (42-49 bits)
+Thu Oct 10 02:16:19 2024  using trial factoring cutoff of 49 bits
+Thu Oct 10 02:16:19 2024  polynomial 'A' values have 11 factors
+Thu Oct 10 02:33:59 2024  61301 relations (16364 full + 44937 combined from 664771 partial), need 61272
+Thu Oct 10 02:34:00 2024  begin with 681135 relations
+Thu Oct 10 02:34:00 2024  reduce to 149164 relations in 10 passes
+Thu Oct 10 02:34:00 2024  attempting to read 149164 relations
+Thu Oct 10 02:34:00 2024  recovered 149164 relations
+Thu Oct 10 02:34:00 2024  recovered 124952 polynomials
+Thu Oct 10 02:34:00 2024  attempting to build 61301 cycles
+Thu Oct 10 02:34:00 2024  found 61301 cycles in 5 passes
+Thu Oct 10 02:34:00 2024  distribution of cycle lengths:
+Thu Oct 10 02:34:00 2024     length 1 : 16364
+Thu Oct 10 02:34:00 2024     length 2 : 11759
+Thu Oct 10 02:34:00 2024     length 3 : 10970
+Thu Oct 10 02:34:00 2024     length 4 : 8002
+Thu Oct 10 02:34:00 2024     length 5 : 5865
+Thu Oct 10 02:34:00 2024     length 6 : 3572
+Thu Oct 10 02:34:00 2024     length 7 : 2187
+Thu Oct 10 02:34:00 2024     length 9+: 2582
+Thu Oct 10 02:34:00 2024  largest cycle: 18 relations
+Thu Oct 10 02:34:00 2024  matrix is 61176 x 61301 (15.9 MB) with weight 3677545 (59.99/col)
+Thu Oct 10 02:34:00 2024  sparse part has weight 3677545 (59.99/col)
+Thu Oct 10 02:34:00 2024  filtering completed in 3 passes
+Thu Oct 10 02:34:00 2024  matrix is 57007 x 57071 (14.9 MB) with weight 3459867 (60.62/col)
+Thu Oct 10 02:34:00 2024  sparse part has weight 3459867 (60.62/col)
+Thu Oct 10 02:34:00 2024  saving the first 48 matrix rows for later
+Thu Oct 10 02:34:00 2024  matrix includes 64 packed rows
+Thu Oct 10 02:34:00 2024  matrix is 56959 x 57071 (11.2 MB) with weight 2871642 (50.32/col)
+Thu Oct 10 02:34:00 2024  sparse part has weight 2358333 (41.32/col)
+Thu Oct 10 02:34:00 2024  using block size 8192 and superblock size 49152 for processor cache size 512 kB
+Thu Oct 10 02:34:01 2024  commencing Lanczos iteration
+Thu Oct 10 02:34:01 2024  memory use: 6.8 MB
+Thu Oct 10 02:34:05 2024  lanczos halted after 903 iterations (dim = 56957)
+Thu Oct 10 02:34:05 2024  recovered 16 nontrivial dependencies
+Thu Oct 10 02:34:05 2024  p2 factor: 23
+Thu Oct 10 02:34:05 2024  p20 factor: 17019675606275004937
+Thu Oct 10 02:34:05 2024  p26 factor: 38410525466171897653970207
+Thu Oct 10 02:34:05 2024  p45 factor: 842064040940461282590681765714723229319409851
+Thu Oct 10 02:34:05 2024  elapsed time 00:17:46
