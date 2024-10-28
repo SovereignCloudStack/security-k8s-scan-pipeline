@@ -71,8 +71,6 @@
         detach: true
         auto_remove: true
       register: trivy_result_compliance
-<<<<<<< HEAD
-    
     - name: Upload compliance scan results to S3
       os_object:
         container: "{{ s3_bucket_name }}"
